@@ -1,6 +1,8 @@
 using System.IO.Ports;
 using Mythosia.Integrity.CRC;
 
+namespace serialcontroller;
+
 public static class SerialPortExtensions
 {
     public async static Task ReadAsync(this SerialPort serialPort, byte[] buffer, int offset, int count)
@@ -52,14 +54,22 @@ enum DriveMode: byte {
 class UartDriveTrain : IDriveTrain
 {
     private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-    private readonly SerialPort serialPort = new SerialPort("/dev/ttyS0", 115200);
+    private readonly SerialPort serialPort = new SerialPort("/dev/ttyAMA0", 115200);
+
+    public UartDriveTrain() {
+        serialPort.Open();
+    }
 
     public async Task Drive(DriveMode mode, byte[] data, byte sensor) {
         if(data.Length > 3) {
             throw new Exception();
         }
         using var raii = await semaphore.Raii();
-        var frame = (new byte[] {0x01, 0x01, (byte) mode, 0x00, 0x00, 0x00, sensor}).WithCRC8().ToArray();
+
+        var frame = new byte[] {0x01, 0x01, (byte) mode, 0x00, 0x00, 0x00, sensor};
+        data.CopyTo(frame, 3);
+        frame = frame.WithCRC8(CRC8Type.Maxim).ToArray();
+
         serialPort.Write(frame, 0, frame.Length);
         // todo: check
         var _ = await serialPort.ReadAsync(8);
@@ -67,15 +77,15 @@ class UartDriveTrain : IDriveTrain
 
     public async Task<(double, double)> Position() {
         using var raii = await semaphore.Raii();
-        var frame = (new byte[] {0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}).WithCRC8().ToArray();
+        var frame = (new byte[] {0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}).WithCRC8(CRC8Type.Maxim).ToArray();
         serialPort.Write(frame, 0, frame.Length);
 
-        var response = await serialPort.ReadAsync(8);
-        var absByte = response[2];
-        var relByte = response[3];
-        var abs = 10.0 / 0xFF * absByte;
-        var rel = 10.0 / 0xFF * relByte;
-        return (abs, rel);
+        // var response = await serialPort.ReadAsync(8);
+        // var absByte = response[2];
+        // var relByte = response[3];
+        // var abs = 10.0 / 0xFF * absByte;
+        // var rel = 10.0 / 0xFF * relByte;
+        return (0.0, 0.0);
     }
 
     public void Dispose()
