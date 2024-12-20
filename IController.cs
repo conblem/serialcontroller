@@ -2,14 +2,14 @@ using Gamepad;
 
 namespace serialcontroller;
 
-enum Direction {
+internal enum Direction {
     Left,
     Right,
     Up,
     Down
 }
 
-class DirectionEvent {
+internal class DirectionEvent {
     public required Direction Direction { init; get;}
     public required short Value { init; get;}
 }
@@ -19,7 +19,7 @@ class DirectionEvent {
 //     VERTICAL=0x01
 // }
 
-enum Button {
+internal enum Button {
     A,
     Left,
     Right,
@@ -27,7 +27,7 @@ enum Button {
     Down,
 }
 
-interface IController: IDisposable {
+internal interface IController: IDisposable {
     event EventHandler<DirectionEvent>? DirectionChanged;
     event EventHandler<Button>? ButtonPressed;
 }
@@ -41,7 +41,7 @@ interface IController: IDisposable {
 // Axis 7 -32767 is arrow up
 // Axis 7 32767 is arrow down
 // A is Button 0
-class Controller : IController
+internal class Controller : IController
 {
     private readonly GamepadController _gamepad = new ();
     public event EventHandler<DirectionEvent>? DirectionChanged;

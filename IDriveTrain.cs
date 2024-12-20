@@ -3,9 +3,9 @@ using Mythosia.Integrity.CRC;
 
 namespace serialcontroller;
 
-public static class SerialPortExtensions
+internal static class SerialPortExtensions
 {
-    public async static Task ReadAsync(this SerialPort serialPort, byte[] buffer, int offset, int count)
+    public static async Task ReadAsync(this SerialPort serialPort, byte[] buffer, int offset, int count)
     {
         var bytesToRead = count;
         var temp = new byte[count];
@@ -18,16 +18,21 @@ public static class SerialPortExtensions
         }
     }
 
-    public async static Task<byte[]> ReadAsync(this SerialPort serialPort, int count)
+    public static async Task<byte[]> ReadAsync(this SerialPort serialPort, int count)
     {
         var buffer = new byte[count];
         await serialPort.ReadAsync(buffer, 0, count);
         return buffer;
     }
+
+    public static ValueTask WriteAsync(this SerialPort serialPort, byte[] buffer)
+    {
+        return serialPort.BaseStream.WriteAsync(buffer);
+    }
 }
 
 public static class SemaphoreSlimExtensions {
-    public async static Task<IDisposable> Raii(this SemaphoreSlim semaphore) {
+    public static async Task<IDisposable> Raii(this SemaphoreSlim semaphore) {
         await semaphore.WaitAsync();
         return new Lock(semaphore);
 
@@ -41,17 +46,17 @@ public static class SemaphoreSlimExtensions {
     }
 }
 
-interface IDriveTrain: IDisposable {
+internal interface IDriveTrain: IDisposable {
     public Task Drive(DriveMode mode, byte[] data, byte sensor);
     public Task<(double, double)> Position();
 }
 
-enum DriveMode: byte {
+internal enum DriveMode: byte {
     Straight=0x01,
     TurnOnPoint=0x02,
 }
 
-class UartDriveTrain : IDriveTrain
+internal class UartDriveTrain : IDriveTrain
 {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly SerialPort _serialPort = new("/dev/ttyAMA0", 115200);
@@ -70,7 +75,7 @@ class UartDriveTrain : IDriveTrain
         data.CopyTo(frame, 3);
         frame = frame.WithCRC8(CRC8Type.Maxim).ToArray();
 
-        _serialPort.Write(frame, 0, frame.Length);
+        await _serialPort.WriteAsync(frame);
         // todo: check
         var _ = await _serialPort.ReadAsync(8);
     }
@@ -80,7 +85,7 @@ class UartDriveTrain : IDriveTrain
         var frame = new byte[] {0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}
             .WithCRC8(CRC8Type.Maxim)
             .ToArray();
-        _serialPort.Write(frame, 0, frame.Length);
+        await _serialPort.WriteAsync(frame);
 
         // var response = await serialPort.ReadAsync(8);
         // var absByte = response[2];
@@ -96,7 +101,7 @@ class UartDriveTrain : IDriveTrain
     }
 }
 
-class NoopDriveTrain : IDriveTrain
+internal class NoopDriveTrain : IDriveTrain
 {
     public void Dispose()
     {
