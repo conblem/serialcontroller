@@ -24,11 +24,6 @@ internal static class SerialPortExtensions
         await serialPort.ReadAsync(buffer, 0, count);
         return buffer;
     }
-
-    public static ValueTask WriteAsync(this SerialPort serialPort, byte[] buffer)
-    {
-        return serialPort.BaseStream.WriteAsync(buffer);
-    }
 }
 
 public static class SemaphoreSlimExtensions {
@@ -75,7 +70,7 @@ internal class UartDriveTrain : IDriveTrain
         data.CopyTo(frame, 3);
         frame = frame.WithCRC8(CRC8Type.Maxim).ToArray();
 
-        await _serialPort.WriteAsync(frame);
+        _serialPort.Write(frame, 0, frame.Length);
         // todo: check
         var _ = await _serialPort.ReadAsync(8);
     }
@@ -85,7 +80,7 @@ internal class UartDriveTrain : IDriveTrain
         var frame = new byte[] {0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}
             .WithCRC8(CRC8Type.Maxim)
             .ToArray();
-        await _serialPort.WriteAsync(frame);
+        _serialPort.Write(frame, 0, frame.Length);
 
         // var response = await serialPort.ReadAsync(8);
         // var absByte = response[2];
