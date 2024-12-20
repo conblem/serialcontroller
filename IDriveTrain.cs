@@ -53,32 +53,34 @@ enum DriveMode: byte {
 
 class UartDriveTrain : IDriveTrain
 {
-    private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-    private readonly SerialPort serialPort = new SerialPort("/dev/ttyAMA0", 115200);
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private readonly SerialPort _serialPort = new("/dev/ttyAMA0", 115200);
 
     public UartDriveTrain() {
-        serialPort.Open();
+        _serialPort.Open();
     }
 
     public async Task Drive(DriveMode mode, byte[] data, byte sensor) {
         if(data.Length > 3) {
             throw new Exception();
         }
-        using var raii = await semaphore.Raii();
+        using var raii = await _semaphore.Raii();
 
         var frame = new byte[] {0x01, 0x01, (byte) mode, 0x00, 0x00, 0x00, sensor};
         data.CopyTo(frame, 3);
         frame = frame.WithCRC8(CRC8Type.Maxim).ToArray();
 
-        serialPort.Write(frame, 0, frame.Length);
+        _serialPort.Write(frame, 0, frame.Length);
         // todo: check
-        var _ = await serialPort.ReadAsync(8);
+        var _ = await _serialPort.ReadAsync(8);
     }
 
     public async Task<(double, double)> Position() {
-        using var raii = await semaphore.Raii();
-        var frame = (new byte[] {0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}).WithCRC8(CRC8Type.Maxim).ToArray();
-        serialPort.Write(frame, 0, frame.Length);
+        using var raii = await _semaphore.Raii();
+        var frame = new byte[] {0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}
+            .WithCRC8(CRC8Type.Maxim)
+            .ToArray();
+        _serialPort.Write(frame, 0, frame.Length);
 
         // var response = await serialPort.ReadAsync(8);
         // var absByte = response[2];
@@ -90,6 +92,23 @@ class UartDriveTrain : IDriveTrain
 
     public void Dispose()
     {
-        serialPort.Dispose();
+        _serialPort.Dispose();
+    }
+}
+
+class NoopDriveTrain : IDriveTrain
+{
+    public void Dispose()
+    {
+    }
+
+    public Task Drive(DriveMode mode, byte[] data, byte sensor)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task<(double, double)> Position()
+    {
+        return Task.FromResult((0.0, 0.0));
     }
 }

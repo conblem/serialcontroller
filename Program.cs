@@ -1,4 +1,4 @@
-﻿using serialcontroller;
+using serialcontroller;
 
 using IDriveTrain driveTrain = new UartDriveTrain();
 using IController controller = new Controller();
@@ -21,7 +21,7 @@ controller.ButtonPressed += (_, button) => {
     if(lastDirectionEvent.Direction == Direction.Up) {
         var distance = Convert.ToByte(lastDirectionEvent.Value * 255 / 32767);
         Console.WriteLine("Straight" + distance);
-        driveTrain.Drive(DriveMode.Straight, [distance], 0x00);
+        driveTrain.Drive(DriveMode.Straight, [distance, distance], 0x00);
     }
     if(lastDirectionEvent.Direction == Direction.Left) {
         var left = Convert.ToByte(128 + (lastDirectionEvent.Value * 127 / 32767));

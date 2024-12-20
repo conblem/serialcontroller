@@ -43,14 +43,14 @@ interface IController: IDisposable {
 // A is Button 0
 class Controller : IController
 {
-    private readonly GamepadController gamepad = new ("/dev/input/js0");
+    private readonly GamepadController _gamepad = new ();
     public event EventHandler<DirectionEvent>? DirectionChanged;
     public event EventHandler<Button>? ButtonPressed;
-    public short HorizontalValue = 0;
-    public short VerticalValue = 0;
+    private short _horizontalValue;
+    private short _verticalValue;
 
     public Controller() {
-        gamepad.AxisChanged += (_, e) =>
+        _gamepad.AxisChanged += (_, e) =>
         {
             switch (e.Axis)
             {
@@ -67,48 +67,48 @@ class Controller : IController
                     ButtonPressed?.Invoke(this, Button.Down);
                     return;
                 case 0:
-                    HorizontalValue = Math.Abs(e.Value);
+                    _horizontalValue = Math.Abs(e.Value);
                     break;
                 case 1:
-                    VerticalValue = Math.Abs(e.Value);
+                    _verticalValue = Math.Abs(e.Value);
                     break;
             }
 
-            if(e.Axis == 0 && HorizontalValue > VerticalValue) {
+            if(e.Axis == 0 && _horizontalValue > _verticalValue) {
                 if(e.Value < 0) {
                     DirectionChanged?.Invoke(this, new DirectionEvent {
                         Direction = Direction.Left,
-                        Value = HorizontalValue
+                        Value = _horizontalValue
                     });
                     return;
                 }
                 if(e.Value > 0) {
                     DirectionChanged?.Invoke(this, new DirectionEvent {
                         Direction = Direction.Right,
-                        Value = HorizontalValue
+                        Value = _horizontalValue
                     });
                     return;
                 }
             }
-            if(e.Axis == 1 && VerticalValue > HorizontalValue) {
+            if(e.Axis == 1 && _verticalValue > _horizontalValue) {
                 if(e.Value < 0) {
                     DirectionChanged?.Invoke(this, new DirectionEvent {
                         Direction = Direction.Up,
-                        Value = VerticalValue 
+                        Value = _verticalValue 
                     });
                     return;
                 }
                 if(e.Value > 0) {
                     DirectionChanged?.Invoke(this, new DirectionEvent {
                         Direction = Direction.Down,
-                        Value = VerticalValue 
+                        Value = _verticalValue 
                     });
                     return;
                 }
             }
         };
 
-        gamepad.ButtonChanged += (_, e) =>
+        _gamepad.ButtonChanged += (_, e) =>
         {
             if(e.Pressed && e.Button == 0) {
                 ButtonPressed?.Invoke(this, Button.A);
@@ -119,6 +119,6 @@ class Controller : IController
     
     public void Dispose()
     {
-        gamepad.Dispose();
+        _gamepad.Dispose();
     }
 }
