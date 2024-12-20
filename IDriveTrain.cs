@@ -66,13 +66,15 @@ internal class UartDriveTrain : IDriveTrain
         }
         using var raii = await _semaphore.Raii();
 
-        var frame = new byte[] {0x01, 0x01, (byte) mode, 0x00, 0x00, 0x00, sensor};
-        data.CopyTo(frame, 3);
-        frame = frame.WithCRC8(CRC8Type.Maxim).ToArray();
+        // var frame = new byte[] {0x01, 0x01, (byte) mode, 0x00, 0x00, 0x00, sensor};
+        var frame = new byte[] {0x01, 0x02, 0x3, 0x04, 0x05, 0x06, 0x0A};
+        // data.CopyTo(frame, 3);
+        // frame = frame.WithCRC8(CRC8Type.Maxim).ToArray();
 
-        _serialPort.Write(frame, 0, frame.Length);
+        await _serialPort.BaseStream.WriteAsync(frame);
+        // _serialPort.Write(frame, 0, frame.Length);
         // todo: check
-        var _ = await _serialPort.ReadAsync(8);
+        // var _ = await _serialPort.ReadAsync(8);
     }
 
     public async Task<(double, double)> Position() {
@@ -80,7 +82,8 @@ internal class UartDriveTrain : IDriveTrain
         var frame = new byte[] {0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}
             .WithCRC8(CRC8Type.Maxim)
             .ToArray();
-        _serialPort.Write(frame, 0, frame.Length);
+        await _serialPort.BaseStream.WriteAsync(frame);
+        // _serialPort.Write(frame, 0, frame.Length);
 
         // var response = await serialPort.ReadAsync(8);
         // var absByte = response[2];
